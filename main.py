@@ -24,7 +24,6 @@ threading.Thread(target=run).start()
 TOKEN = os.getenv("TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 GUILD_ID = int(os.getenv("GUILD_ID"))
-PING_CHANNEL_ID = int(os.getenv("PING_CHANNEL_ID"))
 
 intents = discord.Intents.default()
 intents.message_content = True
