@@ -1,26 +1,9 @@
 import os
 import discord
 from discord.ext import commands, tasks
-from discord import app_commands
 import asyncpg
-import aiohttp
-import threading
-from flask import Flask
-from waitress import serve
+from discord import app_commands
 
-# === Keep-alive server pour Render/Railway ===
-app = Flask("")
-
-@app.route("/")
-def home():
-    return "Bot actif", 200
-
-def run():
-    serve(app, host="0.0.0.0", port=8080)
-
-threading.Thread(target=run).start()
-
-# === Variables d'environnement ===
 TOKEN = os.getenv("TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 GUILD_ID = int(os.getenv("GUILD_ID"))
@@ -52,27 +35,27 @@ async def create_db_pool():
 async def on_ready():
     global db_pool
     print(f"Connecté en tant que {bot.user}")
-    db_pool = await create_db_pool()
-
-    async with db_pool.acquire() as conn:
-        await conn.execute("""
-        CREATE TABLE IF NOT EXISTS roles_valorant (
-            user_id TEXT PRIMARY KEY,
-            username TEXT NOT NULL,
-            tag TEXT NOT NULL,
-            rank TEXT NOT NULL
-        )
-        """)
-
     try:
+        db_pool = await create_db_pool()
+
+        async with db_pool.acquire() as conn:
+            await conn.execute("""
+            CREATE TABLE IF NOT EXISTS roles_valorant (
+                user_id TEXT PRIMARY KEY,
+                username TEXT NOT NULL,
+                tag TEXT NOT NULL,
+                rank TEXT NOT NULL
+            )
+            """)
+
         guild = discord.Object(id=GUILD_ID)
         await bot.tree.sync(guild=guild)
         print("Commandes synchronisées")
-    except Exception as e:
-        print("Erreur sync commandes:", e)
 
-    update_roles.start()
-    ping_loop.start()
+        update_roles.start()
+
+    except Exception as e:
+        print(f"Erreur dans on_ready : {e}")
 
 @bot.tree.command(name="link", description="Lie ton compte Valorant (pseudo#tag)")
 @app_commands.describe(tag="Ton tag Valorant (ex: pseudo#1234)")
@@ -88,7 +71,7 @@ async def link(interaction: discord.Interaction, tag: str):
 
     username, usertag = tag.split("#", 1)
     user_id = str(interaction.user.id)
-    rank = "Silver"  # Rang fictif pour l'instant
+    rank = "Silver"  # Placeholder
 
     async with db_pool.acquire() as conn:
         await conn.execute("""
@@ -115,7 +98,7 @@ async def unlink(interaction: discord.Interaction):
     ), ephemeral=True)
 
 async def fetch_rank_from_api(username, tag):
-    # Simulé – remplacer par appel API réel si possible
+    # À remplacer par un vrai appel API plus tard
     return "Silver"
 
 @tasks.loop(hours=24)
