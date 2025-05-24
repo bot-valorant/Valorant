@@ -1,0 +1,5 @@
+discord.py
+asyncpg
+aiohttp
+flask
+waitress
