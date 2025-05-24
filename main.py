@@ -3,7 +3,21 @@ import discord
 from discord.ext import commands, tasks
 import asyncpg
 from discord import app_commands
+from aiohttp import web
+import threading
 
+# Serveur web pour Render et UptimeRobot
+async def handle(request):
+    return web.Response(text="Bot is alive!")
+
+def run_webserver():
+    app = web.Application()
+    app.router.add_get("/", handle)
+    web.run_app(app, port=8080)
+
+threading.Thread(target=run_webserver).start()
+
+# TOKEN, DB, GUILD, etc.
 TOKEN = os.getenv("TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 GUILD_ID = int(os.getenv("GUILD_ID"))
