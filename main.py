@@ -1,17 +1,33 @@
 import os
 import discord
 from discord.ext import commands, tasks
-import asyncpg
 from discord import app_commands
+import asyncpg
 import aiohttp
+import threading
+from flask import Flask
+from waitress import serve
 
+# === Keep-alive server pour Render/Railway ===
+app = Flask("")
+
+@app.route("/")
+def home():
+    return "Bot actif", 200
+
+def run():
+    serve(app, host="0.0.0.0", port=8080)
+
+threading.Thread(target=run).start()
+
+# === Variables d'environnement ===
 TOKEN = os.getenv("TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 GUILD_ID = int(os.getenv("GUILD_ID"))
-PING_CHANNEL_ID = int(os.getenv("PING_CHANNEL_ID"))  # Salon pour ping automatique
+PING_CHANNEL_ID = int(os.getenv("PING_CHANNEL_ID"))
 
 intents = discord.Intents.default()
-intents.message_content = True  # Nécessaire pour les interactions slash
+intents.message_content = True
 intents.guilds = True
 intents.members = True
 
@@ -73,7 +89,7 @@ async def link(interaction: discord.Interaction, tag: str):
 
     username, usertag = tag.split("#", 1)
     user_id = str(interaction.user.id)
-    rank = "Silver"  # Simulé
+    rank = "Silver"  # Rang fictif pour l'instant
 
     async with db_pool.acquire() as conn:
         await conn.execute("""
@@ -100,7 +116,8 @@ async def unlink(interaction: discord.Interaction):
     ), ephemeral=True)
 
 async def fetch_rank_from_api(username, tag):
-    return "Silver"  # À remplacer plus tard
+    # Simulé – remplacer par appel API réel si possible
+    return "Silver"
 
 @tasks.loop(hours=24)
 async def update_roles():
@@ -141,11 +158,5 @@ async def update_roles():
             await member.add_roles(role, reason="Mise à jour rang Valorant")
 
     print("Mise à jour terminée.")
-
-@tasks.loop(minutes=10)
-async def ping_loop():
-    channel = bot.get_channel(PING_CHANNEL_ID)
-    if channel:
-        await channel.send("Je suis toujours vivant !")
 
 bot.run(TOKEN)
